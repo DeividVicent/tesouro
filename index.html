@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tesouros de Itanhaém</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+          },
+          keyframes: {
+            fadeIn: {
+              '0%': { opacity: 0, transform: 'translateY(20px)' },
+              '100%': { opacity: 1, transform: 'translateY(0)' },
+            },
+            bounceSlow: {
+              '0%, 100%': { transform: 'translateY(-5%)' },
+              '50%': { transform: 'translateY(0)' },
+            },
+          },
+          animation: {
+            'fade-in': 'fadeIn 0.5s ease-out forwards',
+            'bounce-slow': 'bounceSlow 2s infinite',
+          },
+        }
+      }
+    }
+  </script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;800;900&display=swap');
+    body {
+      font-family: 'Inter', sans-serif;
+    }
+  </style>
+</head>
+<body class="bg-gradient-to-br from-blue-100 to-indigo-200 flex items-center justify-center min-h-screen p-4 text-gray-800">
+  <div id="root" class="w-full max-w-lg mx-auto"></div>
+
+  <script>
+    // Dados dos patrimónios históricos e seus desafios.
+    const patrimonios = [
+      {
+        id: 1,
+        name: "Igreja Matriz de Sant'Anna",
+        riddle: "Onde a fé de séculos se encontra no coração de Itanhaém, em uma igreja construída no século XVIII. Qual o nome deste lugar sagrado?",
+        answer: "Igreja Matriz de Sant'Anna",
+        options: ["Igreja Matriz de Sant'Anna", "Santuário Nossa Senhora do Sion", "Igreja Nossa Senhora da Candelária", "Igreja São Benedito"],
+        description: "A Igreja Matriz de Sant'Anna, concluída em 1761, é um marco da arquitetura colonial portuguesa e um dos pontos mais antigos e significativos da cidade. O seu interior, de estilo maneirista, abriga importantes peças de arte sacra, incluindo uma obra do famoso pintor Benedito Calixto.",
+        imageUrl: "https://upload.wikimedia.org/wikipedia/commons/c/ca/Igreja_Matriz_de_Santana_-_Itanha%C3%A9m_-_por_Johnata_Zorzi.jpg",
+      },
+      {
+        id: 2,
+        name: "Convento de Nossa Senhora da Conceição",
+        riddle: "Suba o morro e encontre um lugar que abençoa a paisagem. Um antigo convento, fundado no início do século XVIII, que foi o primeiro templo dedicado à padroeira da cidade. Qual o nome deste local?",
+        answer: "Convento de Nossa Senhora da Conceição",
+        options: ["Convento de Nossa Senhora da Conceição", "Convento Santo Antônio", "Mosteiro de São Bento", "Santuário de Santa Edwiges"],
+        description: "Construído sobre a primeira ermida de Itanhaém, o convento oferece uma vista panorâmica deslumbrante da cidade, do rio e do mar. É um local de grande importância histórica e religiosa, sendo um dos patrimónios tombados pelo IPHAN.",
+        imageUrl: "https://upload.wikimedia.org/wikipedia/commons/c/c0/ROGERIO_CASSIMIRO-SP_Itanhaem_convento_nossa_senhora_da_conceicao_%2840180007624%29.jpg",
+      },
+      {
+        id: 3,
+        name: "Cama de Anchieta",
+        riddle: "Entre rochas e a beira-mar, um lendário poeta jesuíta encontrava paz e inspiração. Que formação rochosa, frequentada no século XVI, leva o nome do santo?",
+        answer: "Cama de Anchieta",
+        options: ["Cama de Anchieta", "Pedra da Baleia", "Pedra do Índio", "Praia do Sonho"],
+        description: "Segundo a lenda, esta formação rochosa peculiar era o local favorito do Padre José de Anchieta para descansar e compor seus poemas. O local, acessível por uma passarela de madeira, é um dos mais visitados e pitorescos de Itanhaém.",
+        imageUrl: "https://i.ytimg.com/vi/FEEUqQhMnsk/maxresdefault.jpg",
+      },
+      {
+        id: 4,
+        name: "Gruta de Nossa Senhora de Lourdes",
+        riddle: "Um refúgio de paz, construído na década de 1960. Fica na beira-mar, perto de uma passarela, e abriga a imagem de uma santa. Qual é o nome deste local de fé?",
+        answer: "Gruta de Nossa Senhora de Lourdes",
+        options: ["Gruta de Nossa Senhora de Lourdes", "Caverna da Serpente", "Toca do Saci", "Gruta de Santo Antônio"],
+        description: "Inspirada na gruta de Lourdes, na França, este local de devoção foi construído em uma formação rochosa natural. É um ponto de peregrinação e oração, que atrai muitos visitantes em busca de paz e milagres.",
+        imageUrl: "https://www2.itanhaem.sp.gov.br/wp-content/uploads/2018/12/gruta_nossa_senhora_de_lourdes.jpg",
+      },
+      {
+        id: 5,
+        name: "Casa da Câmara e Cadeia",
+        riddle: "Um edifício histórico que unia a justiça e o poder político. Já serviu como câmara e como prisão. Que prédio é este?",
+        answer: "Casa da Câmara e Cadeia",
+        options: ["Casa da Câmara e Cadeia", "Fórum de Itanhaém", "Paço Municipal", "Palácio dos Esportes"],
+        description: "Construída no século XVII, este prédio histórico foi o centro do poder político e judiciário da vila. Sua arquitetura colonial é um dos destaques do Centro Histórico.",
+        imageUrl: "https://www.cidadeecultura.com/wp-content/webp-express/webp-images/doc-root/wp-content/uploads/2016/08/itanhaem-museus-conceicao-de-itanhaem-IMG_6505-bx-1024x683.jpg.webp",
+      },
+    ];
+
+    let currentStep = 0;
+    let score = 0;
+    let selectedOption = '';
+    let isCorrect = false;
+    let loading = false;
+    let showConfetti = false;
+
+    const root = document.getElementById('root');
+
+    // Mapeamento dos ícones para o código SVG
+    const lucideIcons = {
+      MapPin: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-map-pin"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>`,
+      ClipboardCheck: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-clipboard-check"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="m9 14 2 2 4-4"/></svg>`,
+      Award: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-award"><circle cx="12" cy="8" r="6"/><path d="M15.477 12.896a8.212 8.212 0 0 1 3.3-1.62c.7-.21 1.41-.36 2.13-.45-.49.52-1.35 1.14-2.4 1.83-.87.58-1.74 1.13-2.6 1.64"/><path d="M8.523 12.896a8.212 8.212 0 0 0-3.3-1.62c-.7-.21-1.41-.36-2.13-.45.49.52 1.35 1.14 2.4 1.83.87.58 1.74 1.13 2.6 1.64"/><path d="m12 16.924-.044.024-.06-.035-.07.03-.06-.022c-.44-.19-1.55-.78-2.6-1.64-.6-.49-1.12-1.02-1.57-1.59-.88-.95-1.58-2.12-2.14-3.5-.04-.08-.07-.15-.1-.23a8.215 8.215 0 0 1 2.12.44 8.213 8.213 0 0 1 3.3 1.61 8.213 8.213 0 0 0 3.3 1.61 8.215 8.215 0 0 0 2.12.44c-.03.08-.06.15-.1.23-.56 1.38-1.26 2.55-2.14 3.5-.45.57-1.16 1.1-1.57 1.59-.87.86-1.76 1.45-2.6 1.64-.07.02-.06.03-.07.02l-.06.03-.04-.02z"/></svg>`,
+      ArrowRight: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-arrow-right"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>`,
+      Search: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-search"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>`,
+      Globe: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-globe"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>`,
+    };
+
+    // Helper para gerar o SVG com as classes corretas.
+    const getLucideIcon = (iconName, size, className) => {
+      const svg = lucideIcons[iconName];
+      if (!svg) return '';
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(svg, 'image/svg+xml');
+      const svgElement = doc.documentElement;
+      svgElement.setAttribute('width', size);
+      svgElement.setAttribute('height', size);
+      svgElement.setAttribute('class', className);
+      return svgElement.outerHTML;
+    };
+
+    // Funções para renderizar os diferentes estados da tela
+    const renderStartScreen = () => {
+      root.innerHTML = `
+        <div class="flex flex-col items-center justify-center p-8 bg-white/70 backdrop-blur-sm rounded-3xl shadow-2xl animate-fade-in text-center">
+          ${getLucideIcon('Search', 64, 'text-blue-500 mb-4')}
+          <h1 class="text-3xl sm:text-4xl font-extrabold text-gray-800 mb-4">Tesouros de Itanhaém</h1>
+          <img
+            src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQEeWjRGY3RHlTwGHOBDFwurOvhGLtnZ0cx0CrCJgkaqCZ_cE1blY9itAjkVUR-oN49uB8&usqp=CAU"
+            alt="Uma imagem da cidade de Itanhaém"
+            class="rounded-lg shadow-md mb-6 w-full max-w-sm"
+            onerror="this.onerror=null; this.src='https://placehold.co/400x250/b7c9e5/4c4c4c?text=Imagem+de+Itanhaém';"
+          />
+          <p class="text-gray-600 mb-6 max-w-sm">
+            Uma caça ao tesouro digital para explorar a rica história e os patrimónios culturais da segunda cidade mais antiga do Brasil.
+          </p>
+          <button id="startButton" class="px-6 py-3 bg-blue-600 text-white font-bold rounded-full shadow-lg hover:bg-blue-700 transition-all duration-300 transform hover:scale-105 flex items-center">
+            Iniciar Aventura
+            ${getLucideIcon('ArrowRight', 20, 'ml-2')}
+          </button>
+        </div>
+      `;
+      document.getElementById('startButton').addEventListener('click', () => {
+        currentStep = 1;
+        renderGameStep();
+      });
+    };
+
+    const renderGameStep = () => {
+      const currentPatrimonio = patrimonios[currentStep - 1];
+      if (!currentPatrimonio) {
+        renderEndScreen();
+        return;
+      }
+      
+      const optionsHtml = currentPatrimonio.options.map((option) => `
+        <button
+          class="w-full px-6 py-3 rounded-full font-bold transition-all duration-200 bg-gray-200 text-gray-800 hover:bg-gray-300"
+          data-option="${option}"
+        >
+          ${option}
+        </button>
+      `).join('');
+
+      root.innerHTML = `
+        <div class="relative flex flex-col items-center justify-center p-8 bg-white/70 backdrop-blur-sm rounded-3xl shadow-2xl animate-fade-in text-center max-w-lg w-full">
+          ${getLucideIcon('MapPin', 48, 'text-blue-500 mb-4 animate-bounce-slow')}
+          <h2 class="text-xl sm:text-2xl font-bold text-gray-800 mb-2">Desafio ${currentStep} de ${patrimonios.length}</h2>
+          <h3 class="text-2xl sm:text-3xl font-extrabold text-blue-700 mb-4">Qual o nome deste património?</h3>
+          
+          <div id="game-content">
+            <a id="imageLink" href="#" target="_blank">
+              <img 
+                src="${currentPatrimonio.imageUrl}" 
+                alt="Imagem de ${currentPatrimonio.name}" 
+                class="rounded-lg shadow-md mb-4 w-full aspect-video object-cover"
+                onerror="this.onerror=null; this.src='https://placehold.co/400x250/b7c9e5/4c4c4c?text=Imagem+do+Patrimônio';"
+              />
+            </a>
+            <p class="text-gray-700 mb-6 font-semibold">${currentPatrimonio.riddle}</p>
+            <div class="flex flex-col w-full space-y-3">
+              ${optionsHtml}
+            </div>
+            <button id="answerButton" disabled class="mt-6 w-full px-6 py-3 bg-gray-400 text-white font-bold rounded-full shadow-lg disabled:cursor-not-allowed">
+              Verificar Resposta
+            </button>
+          </div>
+          <p id="feedback" class="mt-4 text-sm font-semibold animate-fade-in hidden"></p>
+        </div>
+      `;
+      // Define a URL do link da imagem dinamicamente.
+      const imageLink = document.getElementById('imageLink');
+      if (imageLink) {
+        const query = encodeURIComponent(currentPatrimonio.name);
+        imageLink.href = `https://www.google.com/search?q=${query}`;
+      }
+
+      const options = root.querySelectorAll('[data-option]');
+      const answerButton = document.getElementById('answerButton');
+      const feedback = document.getElementById('feedback');
+
+      options.forEach(option => {
+        option.addEventListener('click', () => {
+          selectedOption = option.dataset.option;
+          options.forEach(o => o.classList.remove('bg-blue-500', 'text-white', 'shadow-lg', 'scale-105'));
+          option.classList.add('bg-blue-500', 'text-white', 'shadow-lg', 'scale-105');
+          answerButton.disabled = false;
+          answerButton.classList.remove('bg-gray-400');
+          answerButton.classList.add('bg-blue-600', 'hover:bg-blue-700', 'transition-all', 'duration-300', 'transform', 'hover:scale-105');
+        });
+      });
+
+      answerButton.addEventListener('click', () => {
+        loading = true;
+        answerButton.innerText = 'Verificando...';
+        answerButton.disabled = true;
+
+        setTimeout(() => {
+          if (selectedOption.toLowerCase() === currentPatrimonio.answer.toLowerCase()) {
+            isCorrect = true;
+            score += 10;
+            renderCorrectAnswer();
+            addConfettiWithTimeout(); // Adiciona o confete
+          } else {
+            isCorrect = false;
+            feedback.innerText = 'Resposta incorreta. Tente novamente!';
+            feedback.classList.remove('hidden');
+            feedback.classList.remove('text-green-500');
+            feedback.classList.add('text-red-500');
+            answerButton.innerText = 'Verificar Resposta';
+            answerButton.disabled = false;
+            loading = false;
+          }
+        }, 500);
+      });
+    };
+
+    const renderCorrectAnswer = () => {
+      const currentPatrimonio = patrimonios[currentStep - 1];
+      const gameContent = document.getElementById('game-content');
+      gameContent.innerHTML = `
+        <div class="flex flex-col items-center mt-4 animate-fade-in">
+          ${getLucideIcon('ClipboardCheck', 48, 'text-green-500 mb-4 animate-pulse')}
+          <h4 class="text-xl font-bold text-green-600 mb-2">Resposta Correta!</h4>
+          <p class="text-gray-700 mb-6 leading-relaxed text-left max-w-sm">${currentPatrimonio.description}</p>
+          <button id="nextButton" class="px-6 py-3 bg-green-600 text-white font-bold rounded-full shadow-lg hover:bg-green-700 transition-all duration-300 transform hover:scale-105 flex items-center">
+            Próximo Património
+            ${getLucideIcon('ArrowRight', 20, 'ml-2')}
+          </button>
+        </div>
+      `;
+      document.getElementById('nextButton').addEventListener('click', () => {
+        currentStep++;
+        isCorrect = false;
+        selectedOption = '';
+        renderGameStep();
+      });
+    };
+
+    const renderEndScreen = () => {
+      root.innerHTML = `
+        <div class="relative flex flex-col items-center justify-center p-8 bg-white/70 backdrop-blur-sm rounded-3xl shadow-2xl animate-fade-in text-center">
+          ${getLucideIcon('Award', 64, 'text-yellow-500 mb-4 animate-bounce')}
+          <h1 class="text-3xl sm:text-4xl font-extrabold text-gray-800 mb-4">Caça ao Tesouro Concluída!</h1>
+          <p class="text-gray-600 mb-6 max-w-sm">
+            Parabéns, explorador! Você desvendou os segredos dos principais patrimónios históricos de Itanhaém.
+          </p>
+          <div class="text-2xl font-bold text-blue-700 mb-6">Sua Pontuação Final: ${score}</div>
+          <div class="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4 w-full justify-center">
+            <button id="restartButton" class="px-6 py-3 bg-blue-600 text-white font-bold rounded-full shadow-lg hover:bg-blue-700 transition-all duration-300 transform hover:scale-105">
+              Reiniciar Aventura
+            </button>
+            <a id="tourismLink" href="https://www.itanhaem.sp.gov.br/turismo/" target="_blank" class="px-6 py-3 bg-gray-600 text-white font-bold rounded-full shadow-lg hover:bg-gray-700 transition-all duration-300 transform hover:scale-105 flex items-center justify-center">
+              Visitar o site de Turismo
+              ${getLucideIcon('Globe', 20, 'ml-2')}
+            </a>
+          </div>
+        </div>
+      `;
+      document.getElementById('restartButton').addEventListener('click', () => {
+        currentStep = 0;
+        score = 0;
+        selectedOption = '';
+        isCorrect = false;
+        showConfetti = false;
+        removeConfetti();
+        renderStartScreen();
+      });
+      // Adiciona o confete na tela final
+      addConfettiWithTimeout();
+    };
+
+    // Lógica para os confetes
+    const confettiCanvas = document.createElement('canvas');
+    confettiCanvas.className = "absolute inset-0 z-50 pointer-events-none";
+    document.body.appendChild(confettiCanvas);
+    const ctx = confettiCanvas.getContext('2d');
+    const particles = [];
+    const particleCount = 200;
+    const colors = ['#f44336', '#e91e63', '#9c27b0', '#673ab7', '#3f51b5', '#2196f3', '#03a9f4', '#00bcd4', '#009688', '#4caf50', '#8bc34a', '#cddc39', '#ffeb3b', '#ffc107', '#ff9800', '#ff5722'];
+
+    function Particle() {
+      this.x = Math.random() * confettiCanvas.width;
+      this.y = Math.random() * confettiCanvas.height - confettiCanvas.height;
+      this.radius = Math.random() * 5 + 2;
+      this.color = colors[Math.floor(Math.random() * colors.length)];
+      this.velocity = {
+        x: Math.random() * 3 - 1.5,
+        y: Math.random() * 3 + 1
+      };
+      this.rotation = Math.random() * 360;
+      this.rotationSpeed = Math.random() * 10 - 5;
+
+      this.draw = function() {
+        ctx.save();
+        ctx.beginPath();
+        ctx.fillStyle = this.color;
+        ctx.translate(this.x, this.y);
+        ctx.rotate(this.rotation * Math.PI / 180);
+        ctx.fillRect(-this.radius / 2, -this.radius / 2, this.radius, this.radius);
+        ctx.restore();
+        ctx.closePath();
+      };
+
+      this.update = function() {
+        if (this.y > confettiCanvas.height) {
+          this.y = -20;
+          this.x = Math.random() * confettiCanvas.width;
+        }
+        this.x += this.velocity.x;
+        this.y += this.velocity.y;
+        this.rotation += this.rotationSpeed;
+      };
+    }
+
+    function addConfetti() {
+      particles.length = 0; // Limpa as partículas existentes
+      for (let i = 0; i < particleCount; i++) {
+        particles.push(new Particle());
+      }
+      confettiCanvas.style.display = 'block';
+      animateConfetti();
+    }
+    
+    // Nova função para adicionar o confete com um temporizador
+    function addConfettiWithTimeout() {
+        showConfetti = true;
+        addConfetti();
+        setTimeout(() => {
+            showConfetti = false;
+        }, 5000); // Remove o confete após 5 segundos
+    }
+
+    function removeConfetti() {
+      confettiCanvas.style.display = 'none';
+    }
+
+    function animateConfetti() {
+      if (!confettiCanvas) return;
+      ctx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
+      for (let i = 0; i < particles.length; i++) {
+        particles[i].update();
+        particles[i].draw();
+      }
+      if (showConfetti) {
+        requestAnimationFrame(animateConfetti);
+      } else {
+        removeConfetti();
+      }
+    }
+    
+    const handleResize = () => {
+      confettiCanvas.width = window.innerWidth;
+      confettiCanvas.height = window.innerHeight;
+    };
+
+    window.addEventListener('resize', handleResize);
+    handleResize();
+
+    // Inicia o aplicativo
+    window.onload = renderStartScreen;
+
+  </script>
+</body>
+</html>
